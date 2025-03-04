@@ -8,7 +8,10 @@
 - [Deployment slots](#deployment-slots)
 - [App service settings](#app-service-settings)
   - [Environment variables and connection strings](#environment-variables-and-connection-strings)
-  - [](#)
+  - [SSL settings](#ssl-settings)
+  - [Autoscaling an app service](#autoscaling-an-app-service)
+    - [Rules based auto-scaling](#rules-based-auto-scaling)
+- [Create a web app from Powershell](#create-a-web-app-from-powershell)
 
 # Powershell commands
 ```
@@ -112,4 +115,53 @@ If you need further assistance or have additional questions, feel free to ask!
 * In the app-services settings, you can store environment variables, and connection strings
 There is a separate tab for connection strings. 
 
-##  
+##  SSL settings
+* By default an app has an SSL certificate from *.azurewebsites.net - its a generic/blanket certificate. 
+  * It does not cover the app's custom domain
+* We can generate a certificate for the app in `Settings/Certificates/Managed Certificates`:
+  1. Generate a certificate in `Settings/Certificates/Managed Certificates`
+  2. If you have a custom domain, Go to `Settings/Custom Domains` > `Add bindings` > Select the certificate that we just created > The `TLS/SSL type` can be `SNI SSL` as its the latest type and is supported by most modern browsers.
+
+## Autoscaling an app service
+* If the pricing plan is premium, we can scale up to 30 instances in `Settings/Scale out`
+
+### Rules based auto-scaling
+* Go to `Settings/Scale out` and enable diagnostic logs
+
+# Create a web app from Powershell
+```
+New-AzResourceGroup 
+  -Name 'powershellwebapp' 
+  -Location 'EastUS'
+
+New-AzAppServicePlan 
+  -Name 'aznewappserviceplan2025Feb04' 
+  -Location 'EastUS' 
+  -ResourceGroupName 'powershellwebapp' 
+  -Tier Free
+
+// The Name of the webapp should be unique as it leads to the URL
+New-AzWebApp `
+  -ResourceGroupName 'AZ204Course2025Feb' `
+  -Name 'powershellwebapp2025feb04' `
+  -Location 'Canada Central' `
+  -AppServicePlan 'AZ204Course2025FebAppServicePlan'
+
+
+// define path for a git repo where our script is defined
+$gitrepo="https://github.com/Azure-Samples/app-service-web-dotnet-get-started.git"
+
+// define properties object using $gitrepo
+$PropertiesObject = @{
+  repoUrl = "$gitrepo";
+  branch = "master";
+  isManualIntegration = "true";
+}
+
+Set-AzResource 
+  -Properties $PropertiesObject 
+  -ResourceGroupName powershellwebapp 
+  -ResourceName powershellwebapp2025feb04
+  -ApiVersion 2025-03-04
+  -Force
+```
